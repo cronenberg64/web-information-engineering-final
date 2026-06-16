@@ -80,7 +80,7 @@ document.getElementById("postButton").addEventListener("click", async () => {
 
   document.getElementById("postContent").value = "";
 
-  await loadPosts(); // IMPORTANT: await it
+  await loadPosts();
 });
   
 window.addEventListener("DOMContentLoaded", () => {
