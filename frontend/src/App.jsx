@@ -1,38 +1,26 @@
 import { useEffect, useState } from "react";
 import Feed from "./components/Feed";
 import PostForm from "./components/PostForm";
-import { Routes, Route, useParams, Link } from "react-router-dom";
+import { Routes, Route, useParams, Link, useLocation } from "react-router-dom";
+import ProfilePage from "./components/ProfilePage";
 
-function FeedPage() {
+function FeedPage({ posts }) {
+  return <Feed posts={posts} />;
+}
+
+function HashtagPage({ posts, loadPosts }) {
   const { tag } = useParams();
 
-  const [posts, setPosts] = useState([]);
-
-  async function loadPosts() {
-    const url = tag
-      ? `http://localhost:3000/api/hashtags/${tag}`
-      : "http://localhost:3000/api/posts";
-
-    const res = await fetch(url);
-    const data = await res.json();
-
-    setPosts(data);
-  }
-
   useEffect(() => {
-    loadPosts();
+    loadPosts(tag);
   }, [tag]);
 
-  return (
-    <Feed posts={posts} />
-  );
+  return <Feed posts={posts} />;
 }
 
 function App() {
   const [posts, setPosts] = useState([]);
   const [navOpen, setNavOpen] = useState(false);
-
-  const [currentTag, setCurrentTag] = useState(null);
 
   async function loadPosts(tag = null) {
     const url = tag
@@ -43,7 +31,6 @@ function App() {
     const data = await res.json();
 
     setPosts(data);
-    setCurrentTag(tag);
   }
 
   async function createPost(content) {
@@ -54,17 +41,27 @@ function App() {
       },
       body: JSON.stringify({
         userId: 1,
-        content,
-        hashtags: []
+        content
       })
     });
 
     await loadPosts();
   }
 
+  const location = useLocation();
   useEffect(() => {
-    loadPosts();
-  }, []);
+    const path = location.pathname;
+
+    if (path === "/") {
+      loadPosts();
+      return;
+    }
+
+    if (path.startsWith("/hashtags/")) {
+      const tag = path.split("/")[2];
+      loadPosts(tag);
+    }
+  }, [location.pathname]);
 
   useEffect(() => {
     function handleEsc(e) {
@@ -100,27 +97,39 @@ function App() {
           onClick={() => setNavOpen(false)}
         >
           <ul>
-            <li><Link to="/">
-              Home
-            </Link></li>
-            <li><Link to="/profile">
-              Profile
-            </Link></li>
-            <li><Link to="/settings">
-              Settings
-            </Link></li>
+            <li>
+              <Link to="/">Home</Link>
+            </li>
+
+            <li>
+              <Link to="/profile/demo">Profile</Link>
+            </li>
+
+            <li>
+              <Link to="/settings">Settings</Link>
+            </li>
           </ul>
         </nav>
 
         <Routes>
           <Route
             path="/"
-            element={<FeedPage />}
+            element={<FeedPage posts={posts} />}
           />
 
           <Route
             path="/hashtags/:tag"
-            element={<FeedPage />}
+            element={
+              <HashtagPage
+                posts={posts}
+                loadPosts={loadPosts}
+              />
+            }
+          />
+
+          <Route
+            path="/profile/:username"
+            element={<ProfilePage />}
           />
         </Routes>
 

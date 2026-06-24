@@ -6,7 +6,9 @@ function Post({ post, onTagClick }) {
   return (
     <article className="post">
       <header className="post-meta">
-        <strong>@{post.username}</strong>
+        <strong><Link to={`/profile/${post.username}`}>
+          @{post.username}
+        </Link></strong>
       </header>
 
       <p>
