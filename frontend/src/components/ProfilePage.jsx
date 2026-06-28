@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import Feed from "./Feed";
+import { apiClient } from "../lib/api";
 
 function ProfilePage() {
   const { username } = useParams();
@@ -12,7 +13,7 @@ function ProfilePage() {
     let isActive = true;
 
     async function syncProfile() {
-      const res = await fetch(
+      const res = await apiClient(
         `http://localhost:3000/api/users/${username}`
       );
 

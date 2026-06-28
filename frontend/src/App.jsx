@@ -14,15 +14,18 @@ import HashtagPage from "./pages/HashtagPage";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
+import { apiClient } from "./lib/api";
 
 function getStoredSession() {
   if (typeof window === "undefined") {
-    return { isAuthenticated: false, username: "" };
+    return { isAuthenticated: false, user: null };
   }
 
+  const token = window.localStorage.getItem("apple_tree_token");
+  const user = window.localStorage.getItem("apple_tree_user");
   return {
-    isAuthenticated: window.localStorage.getItem("isAuthenticated") === "true",
-    username: window.localStorage.getItem("username") ?? ""
+    isAuthenticated: !!token,
+    user: user ? JSON.parse(user) : null
   };
 }
 
@@ -48,7 +51,7 @@ function AppShell({ currentUser, createPost, navOpen, onLogout, setNavOpen }) {
       <header>
         <div>
           <div className="logo">Posts</div>
-          <p className="tagline">Signed in as @{currentUser}</p>
+          <p className="tagline">Signed in as @{currentUser?.username}</p>
         </div>
 
         <div className="headerActions">
@@ -81,7 +84,7 @@ function AppShell({ currentUser, createPost, navOpen, onLogout, setNavOpen }) {
             </li>
 
             <li>
-              <Link to="/profile/demo">Profile</Link>
+              <Link to={`/profile/${currentUser?.username}`}>Profile</Link>
             </li>
 
             <li>
@@ -116,27 +119,26 @@ function App() {
   const location = useLocation();
 
   const isAuthenticated = session.isAuthenticated;
-  const currentUser = session.username;
+  const currentUser = session.user;
 
   const loadPosts = useCallback(async (tag = null) => {
     const url = tag
       ? `http://localhost:3000/api/hashtags/${tag}`
       : "http://localhost:3000/api/posts";
 
-    const res = await fetch(url);
+    const res = await apiClient(url);
     const data = await res.json();
 
     setPosts(data);
   }, []);
 
   const createPost = useCallback(async (content) => {
-    await fetch("http://localhost:3000/api/posts", {
+    await apiClient("http://localhost:3000/api/posts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        userId: 1,
         content
       })
     });
@@ -144,41 +146,43 @@ function App() {
     await loadPosts();
   }, [loadPosts]);
 
-    function handleLogin(userData) {
+  function handleLogin(data) {
+    window.localStorage.setItem("apple_tree_token", data.token);
+    window.localStorage.setItem("apple_tree_user", JSON.stringify(data.user));
     setSession({
       isAuthenticated: true,
-      username: userData.userId
+      user: data.user
     });
-
     setNavOpen(false);
   }
 
-  function handleRegister(userData) {
+  function handleRegister(data) {
+    window.localStorage.setItem("apple_tree_token", data.token);
+    window.localStorage.setItem("apple_tree_user", JSON.stringify(data.user));
     setSession({
       isAuthenticated: true,
-      username: userData.userId
+      user: data.user
     });
-
     setNavOpen(false);
   }
+
   function handleLogout() {
+    window.localStorage.removeItem("apple_tree_token");
+    window.localStorage.removeItem("apple_tree_user");
     setSession({
       isAuthenticated: false,
-      username: ""
+      user: null
     });
     setNavOpen(false);
   }
 
   useEffect(() => {
-    window.localStorage.setItem("isAuthenticated", String(isAuthenticated));
-
-    if (currentUser) {
-      window.localStorage.setItem("username", currentUser);
-      return;
+    function handleUnauthorized() {
+      handleLogout();
     }
-
-    window.localStorage.removeItem("username");
-  }, [currentUser, isAuthenticated]);
+    window.addEventListener("unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("unauthorized", handleUnauthorized);
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -195,7 +199,7 @@ function App() {
         ? `http://localhost:3000/api/hashtags/${tag}`
         : "http://localhost:3000/api/posts";
 
-      const res = await fetch(url);
+      const res = await apiClient(url);
       const data = await res.json();
 
       if (isActive) {
@@ -277,7 +281,7 @@ function App() {
               path="settings"
               element={
                 <SettingsPage
-                  currentUser={currentUser}
+                  currentUser={currentUser?.username}
                   onLogout={handleLogout}
                 />
               }

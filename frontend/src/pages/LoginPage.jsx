@@ -6,6 +6,8 @@ import "./LoginPage.css";
 import LoginForm from "../components/LoginForm";
 import RegisterForm from "../components/RegisterForm";
 
+import { apiClient } from "../lib/api";
+
 function LoginPage({ onLogin, onRegister }) {
   const [error, setError] = useState("");
   const [isLogin, setIsLogin] = useState(true);
@@ -19,14 +21,13 @@ function LoginPage({ onLogin, onRegister }) {
     setError("");
 
     try {
-      const response = await fetch(
+      const response = await apiClient(
         "http://localhost:3000/api/login",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include",
           body: JSON.stringify({
             username,
             password,
@@ -55,14 +56,13 @@ function LoginPage({ onLogin, onRegister }) {
     setError("");
 
     try {
-      const response = await fetch(
+      const response = await apiClient(
         "http://localhost:3000/api/register",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
-          credentials: "include",
           body: JSON.stringify({
             username,
             display_name: username,
