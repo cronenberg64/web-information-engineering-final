@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Home, Hash, User, Settings, LogOut, Menu, X, Apple } from "lucide-react";
+import { Home, Hash, User, Settings, LogOut, Menu, X, Apple, Bell } from "lucide-react";
 import PostForm from "./components/PostForm";
 import {
   Link,
@@ -13,7 +13,8 @@ import {
 import ProfilePage from "./components/ProfilePage";
 import HashtagPage from "./pages/HashtagPage";
 import HomePage from "./pages/HomePage";
-import TrendingPage from "./pages/TrendingPage";
+import ExplorePage from "./pages/ExplorePage";
+import NotificationsPage from "./pages/NotificationsPage";
 import LoginPage from "./pages/LoginPage";
 import LandingPage from "./pages/LandingPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -24,8 +25,8 @@ function getStoredSession() {
     return { isAuthenticated: false, user: null };
   }
 
-  const token = window.localStorage.getItem("apple_tree_token");
-  const user = window.localStorage.getItem("apple_tree_user");
+  const token = window.sessionStorage.getItem("apple_tree_token");
+  const user = window.sessionStorage.getItem("apple_tree_user");
   return {
     isAuthenticated: !!token,
     user: user ? JSON.parse(user) : null
@@ -88,9 +89,16 @@ function AppShell({ currentUser, createPost, navOpen, onLogout, setNavOpen }) {
               </li>
 
               <li>
-                <Link to="/trending" onClick={() => setNavOpen(false)}>
+                <Link to="/explore" onClick={() => setNavOpen(false)}>
                   <Hash size={26} />
-                  <span>Trending</span>
+                  <span>Explore</span>
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/notifications" onClick={() => setNavOpen(false)}>
+                  <Bell size={26} />
+                  <span>Notifications</span>
                 </Link>
               </li>
 
@@ -134,7 +142,7 @@ function AppShell({ currentUser, createPost, navOpen, onLogout, setNavOpen }) {
         {navOpen && <div className="navOverlay" onClick={() => setNavOpen(false)}></div>}
 
         <section className="feedColumn">
-          <Outlet context={{ createPost }} />
+          <Outlet context={{ createPost, currentUser }} />
         </section>
 
         {/* Right Sidebar (Optional placeholder for Twitter-like UI) */}
@@ -164,12 +172,12 @@ function App() {
   const isAuthenticated = session.isAuthenticated;
   const currentUser = session.user;
 
-  const loadPosts = useCallback(async (tag = null) => {
+  const loadPosts = useCallback(async (tag = null, tab = "foryou") => {
     let url;
     if (tag) {
       url = `http://localhost:3000/api/hashtags/${tag}`;
     } else {
-      url = "http://localhost:3000/api/posts/feed";
+      url = tab === "following" ? "http://localhost:3000/api/posts/feed" : "http://localhost:3000/api/posts";
     }
 
     try {
@@ -193,14 +201,17 @@ function App() {
     }
   }, []);
 
-  const createPost = useCallback(async (content) => {
+  const createPost = useCallback(async (content, mediaUrl = "", duration = "24h", replyToId = null) => {
     await apiClient("http://localhost:3000/api/posts", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        content
+        content,
+        media_url: mediaUrl,
+        duration,
+        reply_to_id: replyToId
       })
     });
 
@@ -213,8 +224,8 @@ function App() {
   }, []);
 
   function handleLogin(data) {
-    window.localStorage.setItem("apple_tree_token", data.token);
-    window.localStorage.setItem("apple_tree_user", JSON.stringify(data.user));
+    window.sessionStorage.setItem("apple_tree_token", data.token);
+    window.sessionStorage.setItem("apple_tree_user", JSON.stringify(data.user));
     setSession({
       isAuthenticated: true,
       user: data.user
@@ -223,8 +234,8 @@ function App() {
   }
 
   function handleRegister(data) {
-    window.localStorage.setItem("apple_tree_token", data.token);
-    window.localStorage.setItem("apple_tree_user", JSON.stringify(data.user));
+    window.sessionStorage.setItem("apple_tree_token", data.token);
+    window.sessionStorage.setItem("apple_tree_user", JSON.stringify(data.user));
     setSession({
       isAuthenticated: true,
       user: data.user
@@ -233,13 +244,19 @@ function App() {
   }
 
   function handleLogout() {
-    window.localStorage.removeItem("apple_tree_token");
-    window.localStorage.removeItem("apple_tree_user");
+    window.sessionStorage.removeItem("apple_tree_token");
+    window.sessionStorage.removeItem("apple_tree_user");
     setSession({
       isAuthenticated: false,
       user: null
     });
     setNavOpen(false);
+  }
+
+  function handleProfileUpdate(updatedUser) {
+    const newUser = { ...session.user, ...updatedUser };
+    window.sessionStorage.setItem("apple_tree_user", JSON.stringify(newUser));
+    setSession(prev => ({ ...prev, user: newUser }));
   }
 
   useEffect(() => {
@@ -260,10 +277,16 @@ function App() {
         return;
       }
 
+      const searchParams = new URLSearchParams(location.search);
+      const tab = searchParams.get("tab") || "foryou";
       const tag = path.startsWith("/hashtags/") ? path.split("/")[2] : null;
-      const url = tag
-        ? `http://localhost:3000/api/hashtags/${tag}`
-        : "http://localhost:3000/api/posts/feed";
+      
+      let url;
+      if (tag) {
+        url = `http://localhost:3000/api/hashtags/${tag}`;
+      } else {
+        url = tab === "following" ? "http://localhost:3000/api/posts/feed" : "http://localhost:3000/api/posts";
+      }
 
       try {
         setLoadingPosts(true);
@@ -298,7 +321,7 @@ function App() {
     return () => {
       isActive = false;
     };
-  }, [location.pathname]);
+  }, [location.pathname, location.search]);
 
   useEffect(() => {
     function handleEsc(e) {
@@ -313,6 +336,17 @@ function App() {
       document.body.removeEventListener("keydown", handleEsc);
     };
   }, []);
+
+  useEffect(() => {
+    function handlePopState() {
+      const currentSession = getStoredSession();
+      if (session.isAuthenticated !== currentSession.isAuthenticated) {
+        setSession(currentSession);
+      }
+    }
+    window.addEventListener("popstate", handlePopState);
+    return () => window.removeEventListener("popstate", handlePopState);
+  }, [session.isAuthenticated]);
 
   return (
     <>
@@ -376,8 +410,13 @@ function App() {
             />
 
             <Route
-              path="trending"
-              element={<TrendingPage />}
+              path="explore"
+              element={<ExplorePage />}
+            />
+
+            <Route
+              path="notifications"
+              element={<NotificationsPage />}
             />
 
             <Route
@@ -391,6 +430,7 @@ function App() {
                 <SettingsPage
                   currentUser={currentUser?.username}
                   onLogout={handleLogout}
+                  onProfileUpdate={handleProfileUpdate}
                 />
               }
             />

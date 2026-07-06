@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import Feed from "./Feed";
 import { apiClient } from "../lib/api";
 import LoadingSpinner from "./LoadingSpinner";
@@ -8,6 +8,7 @@ import ErrorMessage from "./ErrorMessage";
 function ProfilePage() {
   const { username } = useParams();
 
+  const { currentUser } = useOutletContext();
   const [user, setUser] = useState(null);
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -65,8 +66,6 @@ function ProfilePage() {
   if (error) return <ErrorMessage message={error} />;
   if (!user) return <ErrorMessage message="User not found" />;
 
-  const userStr = window.localStorage.getItem("apple_tree_user");
-  const currentUser = userStr ? JSON.parse(userStr) : null;
   const isMe = currentUser && currentUser.username === user.username;
 
   return (
@@ -94,7 +93,7 @@ function ProfilePage() {
         </div>
       </div>
 
-      <Feed posts={posts} onDeletePost={handleDelete} />
+      <Feed posts={posts} onDeletePost={handleDelete} currentUser={currentUser} />
     </>
   );
 }

@@ -1,5 +1,5 @@
 export async function apiClient(url, options = {}) {
-  const token = window.localStorage.getItem("apple_tree_token");
+  const token = window.sessionStorage.getItem("apple_tree_token");
 
   const headers = {
     ...options.headers,
@@ -15,8 +15,8 @@ export async function apiClient(url, options = {}) {
   });
 
   if (response.status === 401) {
-    window.localStorage.removeItem("apple_tree_token");
-    window.localStorage.removeItem("apple_tree_user");
+    window.sessionStorage.removeItem("apple_tree_token");
+    window.sessionStorage.removeItem("apple_tree_user");
     window.dispatchEvent(new Event("unauthorized"));
   }
 

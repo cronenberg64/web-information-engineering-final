@@ -7,6 +7,8 @@ const authRoutes = require("./routes/auth");
 const postsRoutes = require("./routes/posts");
 const usersRoutes = require("./routes/users");
 const hashtagsRoutes = require("./routes/hashtags");
+const searchRoutes = require("./routes/search");
+const notificationsRoutes = require("./routes/notifications");
 
 const app = express();
 
@@ -21,6 +23,8 @@ app.use("/api", authRoutes);
 app.use("/api/posts", postsRoutes);
 app.use("/api/users", usersRoutes);
 app.use("/api/hashtags", hashtagsRoutes);
+app.use("/api/search", searchRoutes);
+app.use("/api/notifications", notificationsRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

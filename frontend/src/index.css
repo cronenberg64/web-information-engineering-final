@@ -282,8 +282,74 @@ h1, h2, h3, h4, h5, h6 {
   justify-content: space-between;
   align-items: center;
   margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
+}
+
+.formOptions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.optionBtn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color 0.2s;
+}
+
+.optionBtn:hover {
+  background-color: var(--bg-hover);
+}
+
+.durationSelect {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--bg-hover);
+  padding: 4px 8px;
+  border-radius: 16px;
+}
+
+.durationSelect select {
+  background: none;
+  border: none;
+  color: var(--text-color);
+  font-size: 0.85rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.mediaInput {
+  width: 100%;
+  padding: 8px 12px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  color: var(--text-color);
+  margin-top: 8px;
+  font-size: 0.95rem;
+}
+
+.mediaInput:focus {
+  outline: none;
+  border-color: var(--primary);
+}
+
+.formSubmit {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.charCount {
+  font-size: 0.85rem;
+  color: var(--text-muted);
 }
 
 .postButton {
@@ -366,6 +432,73 @@ h1, h2, h3, h4, h5, h6 {
 
 .postDeleteButton { color: var(--text-muted); }
 .postDeleteButton:hover { color: var(--danger); }
+
+.postActionButton.repostButton.reposted { color: var(--success); }
+.postActionButton.repostButton:hover { color: var(--success); }
+.postActionButton.replyButton:hover { color: var(--primary); }
+
+.postMedia {
+  margin-top: 12px;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border-color);
+}
+
+.postMedia img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.replyFormContainer {
+  border-top: 1px solid var(--border-color);
+  background-color: var(--bg-hover);
+  padding: 12px;
+  border-radius: 0 0 12px 12px;
+}
+
+/* TABS */
+.tabsHeader {
+  display: flex;
+  flex-direction: row;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0;
+  width: 100%;
+}
+
+.tab {
+  flex: 1;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 1rem 0;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  position: relative;
+}
+
+.tab:hover {
+  background-color: var(--bg-hover);
+}
+
+.tab.active {
+  color: var(--text-color);
+  font-weight: 700;
+}
+
+.tab.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 50px;
+  height: 4px;
+  background-color: var(--primary);
+  border-radius: 4px 4px 0 0;
+}
 
 
 /* PROFILE PAGE */

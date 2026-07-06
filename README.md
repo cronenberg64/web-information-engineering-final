@@ -49,3 +49,13 @@ A microblogging platform where users can post short updates, follow others, and 
    npm run dev
    ```
 4. Open your browser and navigate to the URL provided by Vite (usually `http://localhost:5173`).
+
+## Database & Accounts
+
+Note that there are currently no seeded accounts in the application. So, you will need to register a new account through the frontend yourself to start testing.
+
+To view registered accounts or inspect the database, you can use the `sqlite3` CLI from the project root:
+
+```bash
+sqlite3 backend/db/apple-tree.db "SELECT id, username, display_name FROM users;"
+```

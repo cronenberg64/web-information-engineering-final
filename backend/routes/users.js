@@ -65,6 +65,8 @@ router.post("/:username/follow", requireAuth, (req, res) => {
     VALUES (?, ?)
   `).run(followerId, userToFollow.id);
 
+  db.prepare(`INSERT INTO notifications (user_id, type, source_user_id) VALUES (?, 'follow', ?)`).run(userToFollow.id, followerId);
+
   res.json({ following: true });
 });
 
@@ -79,7 +81,28 @@ router.delete("/:username/follow", requireAuth, (req, res) => {
     DELETE FROM follows WHERE follower_id = ? AND following_id = ?
   `).run(followerId, userToUnfollow.id);
 
+  db.prepare(`DELETE FROM notifications WHERE user_id = ? AND source_user_id = ? AND type = 'follow'`).run(userToUnfollow.id, followerId);
+
   res.json({ following: false });
+});
+
+const bcrypt = require("bcrypt");
+
+router.put("/profile", requireAuth, async (req, res) => {
+  const userId = req.user.id;
+  const { display_name, password } = req.body;
+
+  if (display_name) {
+    db.prepare(`UPDATE users SET display_name = ? WHERE id = ?`).run(display_name, userId);
+  }
+
+  if (password) {
+    const password_hash = await bcrypt.hash(password, 10);
+    db.prepare(`UPDATE users SET password_hash = ? WHERE id = ?`).run(password_hash, userId);
+  }
+
+  const updatedUser = db.prepare(`SELECT id, username, display_name FROM users WHERE id = ?`).get(userId);
+  res.json({ user: updatedUser });
 });
 
 module.exports = router;

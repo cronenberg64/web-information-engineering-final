@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { apiClient } from "../lib/api";
-import { Heart, Trash2, Clock } from "lucide-react";
+import { Heart, Trash2, Clock, MessageSquare, Repeat2 } from "lucide-react";
+import PostForm from "./PostForm";
 
-function Post({ post, onDelete }) {
+function Post({ post, onDelete, currentUser }) {
   const words = post.content.split(" ");
-  const userStr = window.localStorage.getItem("apple_tree_user");
-  const currentUser = userStr ? JSON.parse(userStr) : null;
   const isAuthor = currentUser && currentUser.id === post.user_id;
 
   const [isLiked, setIsLiked] = useState(post.is_liked);
@@ -14,6 +13,10 @@ function Post({ post, onDelete }) {
 
   const [timeRemaining, setTimeRemaining] = useState("");
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
+
+  const [isReposted, setIsReposted] = useState(post.is_reposted);
+  const [repostCount, setRepostCount] = useState(post.repost_count || 0);
+  const [showReplyForm, setShowReplyForm] = useState(false);
 
   useEffect(() => {
     function updateCountdown() {
@@ -67,6 +70,31 @@ function Post({ post, onDelete }) {
     } catch (err) {
       console.error(err);
       alert("Failed to toggle like");
+    }
+  };
+
+  const toggleRepost = async () => {
+    if (!currentUser) {
+      alert("You must be logged in to repost");
+      return;
+    }
+    
+    try {
+      const method = isReposted ? "DELETE" : "POST";
+      const res = await apiClient(`http://localhost:3000/api/posts/${post.id}/repost`, {
+        method,
+      });
+
+      if (res.ok) {
+        setIsReposted(!isReposted);
+        setRepostCount(prev => isReposted ? prev - 1 : prev + 1);
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to toggle repost");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to toggle repost");
     }
   };
 
@@ -128,7 +156,31 @@ function Post({ post, onDelete }) {
           })}
         </p>
         
+        {post.media_url && (
+          <div className="postMedia">
+            <img src={post.media_url} alt="Post media" loading="lazy" />
+          </div>
+        )}
+        
         <footer className="post-footer">
+          <button 
+            onClick={() => setShowReplyForm(!showReplyForm)}
+            className="postActionButton replyButton"
+            title="Reply"
+          >
+            <MessageSquare size={18} />
+            {post.reply_count > 0 && <span className="actionCount">{post.reply_count}</span>}
+          </button>
+          
+          <button 
+            onClick={toggleRepost}
+            className={`postActionButton repostButton ${isReposted ? "reposted" : ""}`}
+            title="Repost"
+          >
+            <Repeat2 size={18} />
+            {repostCount > 0 && <span className="actionCount">{repostCount}</span>}
+          </button>
+
           <button 
             onClick={toggleLike}
             className={`postActionButton likeButton ${isLiked ? "liked" : ""}`}
@@ -139,6 +191,23 @@ function Post({ post, onDelete }) {
           </button>
         </footer>
       </div>
+      
+      {showReplyForm && (
+        <div className="replyFormContainer">
+          <PostForm 
+            onSubmit={async (content, mediaUrl, duration, replyToId) => {
+              await apiClient("http://localhost:3000/api/posts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ content, media_url: mediaUrl, duration, reply_to_id: replyToId })
+              });
+            }} 
+            currentUser={currentUser} 
+            replyToId={post.id} 
+            onReplySuccess={() => setShowReplyForm(false)}
+          />
+        </div>
+      )}
     </article>
   );
 }

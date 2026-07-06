@@ -2,7 +2,7 @@ import Post from "./Post";
 import LoadingSpinner from "./LoadingSpinner";
 import ErrorMessage from "./ErrorMessage";
 
-function Feed({ posts, loading, error, onDeletePost }) {
+function Feed({ posts, loading, error, onDeletePost, currentUser }) {
   if (loading) return <LoadingSpinner />;
   if (error) return <ErrorMessage message={error} />;
 
@@ -20,6 +20,7 @@ function Feed({ posts, loading, error, onDeletePost }) {
         <Post
           key={post.id}
           post={post}
+          currentUser={currentUser}
           onDelete={() => onDeletePost && onDeletePost(post.id)}
         />
       ))}
