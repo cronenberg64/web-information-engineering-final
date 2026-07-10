@@ -31,7 +31,7 @@ router.get("/:tag", optionalAuth, (req, res) => {
   const userId = req.user ? req.user.id : null;
 
   const posts = db.prepare(`
-    SELECT posts.*, users.username, users.display_name,
+    SELECT posts.*, users.username, users.display_name, users.profile_picture_url,
       (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
       EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as is_liked
     FROM posts
