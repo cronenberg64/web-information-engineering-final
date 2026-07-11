@@ -36,9 +36,9 @@ function performRandomAction() {
   const user = getRandomUser();
   if (!user) return;
 
-  const actionType = getRandomInt(10); // 0-3: Post, 4-6: Like, 7-8: Repost, 9: Follow
+  const actionType = getRandomInt(12); // 0-2: Post, 3-5: Reply, 6-8: Like, 9-10: Repost, 11: Follow
 
-  if (actionType < 4) {
+  if (actionType < 3) {
     // CREATE POST
     const content = SENTENCES[getRandomInt(SENTENCES.length)];
     const hashtags = [...new Set((content.match(/#(\w+)/g) || []).map(tag => tag.slice(1).toLowerCase()))];
@@ -57,7 +57,34 @@ function performRandomAction() {
     }
     console.log(`[BOT] User ${user.id} created a post: "${content}"`);
 
-  } else if (actionType >= 4 && actionType < 7) {
+  } else if (actionType >= 3 && actionType < 6) {
+    // REPLY TO POST
+    const post = getRandomPost();
+    if (post) {
+      const content = SENTENCES[getRandomInt(SENTENCES.length)];
+      const hashtags = [...new Set((content.match(/#(\w+)/g) || []).map(tag => tag.slice(1).toLowerCase()))];
+      
+      const result = db.prepare(`
+        INSERT INTO posts (user_id, content, reply_to_id, expires_at)
+        VALUES (?, ?, ?, datetime('now', '+24 hours'))
+      `).run(user.id, content, post.id);
+      
+      const postId = result.lastInsertRowid;
+
+      for (const tag of hashtags) {
+        db.prepare(`INSERT OR IGNORE INTO hashtags (name) VALUES (?)`).run(tag);
+        const hashtag = db.prepare(`SELECT id FROM hashtags WHERE name = ?`).get(tag);
+        db.prepare(`INSERT OR IGNORE INTO post_hashtags (post_id, hashtag_id) VALUES (?, ?)`).run(postId, hashtag.id);
+      }
+      
+      if (post.user_id !== user.id) {
+        db.prepare(`INSERT INTO notifications (user_id, type, source_user_id, post_id) VALUES (?, 'reply', ?, ?)`).run(post.user_id, user.id, postId);
+      }
+      
+      console.log(`[BOT] User ${user.id} replied to post ${post.id}: "${content}"`);
+    }
+
+  } else if (actionType >= 6 && actionType < 9) {
     // LIKE POST
     const post = getRandomPost();
     if (post && post.user_id !== user.id) {
@@ -68,7 +95,7 @@ function performRandomAction() {
       }
     }
 
-  } else if (actionType >= 7 && actionType < 9) {
+  } else if (actionType >= 9 && actionType < 11) {
     // REPOST
     const post = getRandomPost();
     if (post && post.user_id !== user.id) {

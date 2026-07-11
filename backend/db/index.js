@@ -1,9 +1,11 @@
 const Database = require("better-sqlite3");
 const fs = require("fs");
 const path = require("path");
-require("dotenv").config();
+require("dotenv").config({ path: path.join(__dirname, "../.env") });
 
-const dbPath = process.env.DB_PATH || "database.db";
+const dbPath = process.env.DB_PATH 
+  ? path.resolve(path.join(__dirname, ".."), process.env.DB_PATH) 
+  : path.join(__dirname, "apple-tree.db");
 const db = new Database(dbPath);
 
 function ensureColumn(tableName, columnName, definition) {

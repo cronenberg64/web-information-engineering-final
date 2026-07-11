@@ -16,7 +16,7 @@ router.get("/", optionalAuth, (req, res) => {
       EXISTS(SELECT 1 FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = ?) as is_reposted
     FROM posts
     JOIN users ON posts.user_id = users.id
-    WHERE posts.expires_at > CURRENT_TIMESTAMP
+    WHERE posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
     ORDER BY posts.created_at DESC
   `).all(userId, userId);
   
@@ -38,7 +38,7 @@ router.get("/feed", requireAuth, (req, res) => {
     FROM posts
     JOIN users ON posts.user_id = users.id
     WHERE (posts.user_id = ? OR posts.user_id IN (SELECT following_id FROM follows WHERE follower_id = ?))
-      AND posts.expires_at > CURRENT_TIMESTAMP
+      AND posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
   `;
   const params = [userId, userId, userId, userId];
 
@@ -51,6 +51,37 @@ router.get("/feed", requireAuth, (req, res) => {
 
   const posts = db.prepare(query).all(...params);
   res.json(posts.map(p => ({ ...p, is_liked: !!p.is_liked })));
+});
+
+router.get("/:id/replies", optionalAuth, (req, res) => {
+  const postId = req.params.id;
+  const userId = req.user ? req.user.id : null;
+  const limit = parseInt(req.query.limit) || 10;
+  const offset = parseInt(req.query.offset) || 0;
+
+  const replies = db.prepare(`
+    SELECT posts.*, users.username, users.display_name, users.profile_picture_url,
+      (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+      (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) as repost_count,
+      (SELECT COUNT(*) FROM posts replies WHERE replies.reply_to_id = posts.id) as reply_count,
+      EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as is_liked,
+      EXISTS(SELECT 1 FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = ?) as is_reposted
+    FROM posts
+    JOIN users ON posts.user_id = users.id
+    WHERE posts.reply_to_id = ? AND posts.expires_at > CURRENT_TIMESTAMP
+    ORDER BY posts.created_at ASC
+    LIMIT ? OFFSET ?
+  `).all(userId, userId, postId, limit + 1, offset);
+
+  const hasMore = replies.length > limit;
+  if (hasMore) {
+    replies.pop();
+  }
+
+  res.json({
+    replies: replies.map(p => ({ ...p, is_liked: !!p.is_liked })),
+    hasMore
+  });
 });
 
 router.post("/", requireAuth, (req, res) => {

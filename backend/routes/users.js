@@ -24,7 +24,7 @@ router.get("/:username", optionalAuth, (req, res) => {
       EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as is_liked
     FROM posts
     JOIN users ON posts.user_id = users.id
-    WHERE users.id = ? AND posts.expires_at > CURRENT_TIMESTAMP
+    WHERE users.id = ? AND posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
     ORDER BY posts.created_at DESC
   `).all(currentUserId, user.id);
 

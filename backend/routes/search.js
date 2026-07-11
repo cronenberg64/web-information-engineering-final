@@ -36,7 +36,7 @@ router.get("/", optionalAuth, (req, res) => {
       EXISTS(SELECT 1 FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = ?) as is_reposted
     FROM posts
     JOIN users ON posts.user_id = users.id
-    WHERE posts.content LIKE ? AND posts.expires_at > CURRENT_TIMESTAMP
+    WHERE posts.content LIKE ? AND posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
     ORDER BY posts.created_at DESC
     LIMIT 20
   `).all(userId, userId, queryLike);

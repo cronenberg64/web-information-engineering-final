@@ -17,7 +17,7 @@ router.get("/trending", (req, res) => {
     FROM hashtags
     JOIN post_hashtags ON hashtags.id = post_hashtags.hashtag_id
     JOIN posts ON post_hashtags.post_id = posts.id
-    WHERE posts.created_at > datetime('now', '-24 hours') AND posts.expires_at > CURRENT_TIMESTAMP
+    WHERE posts.created_at > datetime('now', '-24 hours') AND posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
     GROUP BY hashtags.id
     ORDER BY count DESC
     LIMIT 10
@@ -38,7 +38,7 @@ router.get("/:tag", optionalAuth, (req, res) => {
     JOIN users ON posts.user_id = users.id
     JOIN post_hashtags ON posts.id = post_hashtags.post_id
     JOIN hashtags ON hashtags.id = post_hashtags.hashtag_id
-    WHERE hashtags.name = ? AND posts.expires_at > CURRENT_TIMESTAMP
+    WHERE hashtags.name = ? AND posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
     ORDER BY like_count DESC, posts.created_at DESC
   `).all(userId, tag);
 

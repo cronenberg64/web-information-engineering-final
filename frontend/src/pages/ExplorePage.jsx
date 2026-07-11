@@ -68,7 +68,7 @@ function ExplorePage() {
 
   async function handleDelete(postId) {
     try {
-      const res = await apiClient(`http://localhost:3000/api/posts/${postId}`, { method: "DELETE" });
+      const res = await apiClient(`/posts/${postId}`, { method: "DELETE" });
       if (res.ok) {
         setSearchResults(prev => ({
           ...prev,
