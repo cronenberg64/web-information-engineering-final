@@ -48,6 +48,57 @@ function PostForm({ onSubmit, currentUser, replyToId = null, onReplySuccess, onC
     if (onReplySuccess) onReplySuccess(newPost);
   }
 
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please upload an image file');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new window.Image();
+      img.onload = () => {
+        const MAX_WIDTH = 1200;
+        const MAX_HEIGHT = 1200;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        canvas.toBlob((blob) => {
+          const resizedFile = new File([blob], file.name, {
+            type: 'image/jpeg',
+            lastModified: Date.now()
+          });
+          setMediaFile(resizedFile);
+        }, 'image/jpeg', 0.85);
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   return (
     <section className={isReply ? "replyPostForm" : "createPost"}>
       <div 
@@ -71,9 +122,15 @@ function PostForm({ onSubmit, currentUser, replyToId = null, onReplySuccess, onC
           style={{ overflow: 'hidden' }}
         />
         {!isReply && mediaFile && (
-          <div className="mediaPreview" style={{ margin: "8px 0", padding: "8px", background: "var(--bg-hover)", borderRadius: "8px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <span className="text-sm text-muted">📎 {mediaFile.name}</span>
-            <button className="optionBtn" onClick={() => setMediaFile(null)}><X size={16} /></button>
+          <div className="mediaPreview" style={{ position: "relative", margin: "8px 0", borderRadius: "12px", overflow: "hidden", display: "flex", justifyContent: "center", background: "var(--bg-hover)" }}>
+            <img src={URL.createObjectURL(mediaFile)} alt="Preview" style={{ maxWidth: "100%", maxHeight: "300px", objectFit: "contain", display: "block" }} />
+            <button 
+              className="optionBtn" 
+              onClick={() => setMediaFile(null)} 
+              style={{ position: "absolute", top: "8px", right: "8px", background: "rgba(0,0,0,0.6)", color: "white", padding: "4px" }}
+            >
+              <X size={16} />
+            </button>
           </div>
         )}
         <div className={isReply ? "replyActions" : "formActions"}>
@@ -84,7 +141,7 @@ function PostForm({ onSubmit, currentUser, replyToId = null, onReplySuccess, onC
                 accept="image/*" 
                 ref={fileInputRef} 
                 style={{ display: "none" }} 
-                onChange={e => setMediaFile(e.target.files[0])} 
+                onChange={handleFileSelect} 
               />
               <button 
                 className="optionBtn" 

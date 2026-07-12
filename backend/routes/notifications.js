@@ -19,6 +19,12 @@ router.get("/", requireAuth, (req, res) => {
   res.json(notifications);
 });
 
+router.get("/unread-count", requireAuth, (req, res) => {
+  const userId = req.user.id;
+  const row = db.prepare(`SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = 0`).get(userId);
+  res.json({ unreadCount: row.count });
+});
+
 router.put("/read", requireAuth, (req, res) => {
   const userId = req.user.id;
   db.prepare(`UPDATE notifications SET is_read = 1 WHERE user_id = ?`).run(userId);

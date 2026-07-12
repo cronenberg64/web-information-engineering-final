@@ -53,7 +53,31 @@ function RequireAuth({ isAuthenticated }) {
 
 function AppShell({ currentUser, createPost, navOpen, onLogout, setNavOpen }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchQuery, setSearchQuery] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    
+    if (location.pathname === "/notifications") {
+      setUnreadCount(0);
+      return;
+    }
+
+    const fetchUnread = async () => {
+      try {
+        const res = await apiClient("/api/notifications/unread-count");
+        if (res.ok) {
+          const data = await res.json();
+          setUnreadCount(data.unreadCount);
+        }
+      } catch (err) {}
+    };
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 15000);
+    return () => clearInterval(interval);
+  }, [currentUser, location.pathname]);
 
   return (
     <div className="layoutContainer">
@@ -102,7 +126,12 @@ function AppShell({ currentUser, createPost, navOpen, onLogout, setNavOpen }) {
 
               <li>
                 <Link to="/notifications" onClick={() => setNavOpen(false)}>
-                  <Bell size={26} />
+                  <div style={{ position: "relative", display: "inline-flex" }}>
+                    <Bell size={26} />
+                    {unreadCount > 0 && (
+                      <span className="notificationBadge">{unreadCount > 99 ? '99+' : unreadCount}</span>
+                    )}
+                  </div>
                   <span>Notifications</span>
                 </Link>
               </li>
