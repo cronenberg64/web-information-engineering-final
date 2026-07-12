@@ -70,6 +70,16 @@ app.get("/api/test-bcrypt", (req, res) => {
   res.json({ time_ms: time, hash });
 });
 
+app.get("/api/test-write", (req, res) => {
+  try {
+    db.prepare("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY)").run();
+    db.prepare("INSERT INTO test (id) VALUES (null)").run();
+    res.json({ ok: true });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
 app.use((req, res) => {
   if (req.path.startsWith("/api")) {
     return res.status(404).json({ error: "Not found" });
@@ -91,4 +101,14 @@ app.listen(PORT, () => {
       console.log(`Cleanup: Deleted ${result.changes} expired posts.`);
     }
   }, 300000);
+});
+
+app.get("/api/test-write", (req, res) => {
+  try {
+    db.prepare("CREATE TABLE IF NOT EXISTS test (id INTEGER PRIMARY KEY)").run();
+    db.prepare("INSERT INTO test (id) VALUES (null)").run();
+    res.json({ ok: true });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
 });
