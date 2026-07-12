@@ -138,11 +138,18 @@ function Post({ post, onDelete, currentUser, isReply = false }) {
   };
 
   return (
-    <article className={`post ${isReply ? 'isReply' : ''}`}>
-      <div 
-        className="postAvatar"
-        style={post.profile_picture_url ? { backgroundImage: `url(${resolveAssetUrl(post.profile_picture_url)})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}}
-      >
+    <div style={{ display: 'flex', flexDirection: 'column' }}>
+      {post.is_profile_repost === 1 && (
+        <div className="repostIndicator text-muted" style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 16px', fontSize: '0.85rem', marginBottom: '-8px', marginTop: '8px' }}>
+          <Repeat2 size={16} />
+          <span>{post.reposter_username || 'Someone'} reposted</span>
+        </div>
+      )}
+      <article className={`post ${isReply ? 'isReply' : ''}`}>
+        <div 
+          className="postAvatar"
+          style={post.profile_picture_url ? { backgroundImage: `url(${resolveAssetUrl(post.profile_picture_url)})`, backgroundSize: 'cover', backgroundPosition: 'center', color: 'transparent' } : {}}
+        >
         {post.username[0].toUpperCase()}
       </div>
       <div className="postContent">
@@ -310,6 +317,7 @@ function Post({ post, onDelete, currentUser, isReply = false }) {
         )}
       </div>
     </article>
+  </div>
   );
 }
 

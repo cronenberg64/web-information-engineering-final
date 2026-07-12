@@ -15,6 +15,7 @@ function ProfilePage() {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [activeTab, setActiveTab] = useState("posts");
 
   useEffect(() => {
     let isActive = true;
@@ -130,7 +131,26 @@ function ProfilePage() {
         </div>
       </div>
 
-      <Feed posts={posts} onDeletePost={handleDelete} currentUser={currentUser} />
+      <div className="profileTabs">
+        <button 
+          className={`tabButton ${activeTab === 'posts' ? 'active' : ''}`}
+          onClick={() => setActiveTab('posts')}
+        >
+          Posts
+        </button>
+        <button 
+          className={`tabButton ${activeTab === 'replies' ? 'active' : ''}`}
+          onClick={() => setActiveTab('replies')}
+        >
+          Replies
+        </button>
+      </div>
+
+      <Feed 
+        posts={activeTab === 'posts' ? posts.filter(p => !p.reply_to_id || p.is_profile_repost) : posts.filter(p => p.reply_to_id && !p.is_profile_repost)} 
+        onDeletePost={handleDelete} 
+        currentUser={currentUser} 
+      />
     </>
   );
 }

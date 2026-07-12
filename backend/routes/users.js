@@ -19,14 +19,46 @@ router.get("/:username", optionalAuth, (req, res) => {
   }
 
   const posts = db.prepare(`
-    SELECT posts.*, users.username, users.display_name, users.profile_picture_url,
+    SELECT 
+      posts.*, 
+      author.username, 
+      author.display_name, 
+      author.profile_picture_url,
       (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
-      EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as is_liked
+      (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) as repost_count,
+      (SELECT COUNT(*) FROM posts replies WHERE replies.reply_to_id = posts.id) as reply_count,
+      EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as is_liked,
+      EXISTS(SELECT 1 FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = ?) as is_reposted,
+      0 as is_profile_repost,
+      NULL as reposter_username,
+      posts.created_at as sort_time
     FROM posts
-    JOIN users ON posts.user_id = users.id
-    WHERE users.id = ? AND posts.expires_at > CURRENT_TIMESTAMP AND posts.reply_to_id IS NULL
-    ORDER BY posts.created_at DESC
-  `).all(currentUserId, user.id);
+    JOIN users as author ON posts.user_id = author.id
+    WHERE author.id = ? AND posts.expires_at > CURRENT_TIMESTAMP
+
+    UNION ALL
+
+    SELECT 
+      posts.*, 
+      author.username, 
+      author.display_name, 
+      author.profile_picture_url,
+      (SELECT COUNT(*) FROM likes WHERE likes.post_id = posts.id) as like_count,
+      (SELECT COUNT(*) FROM reposts WHERE reposts.post_id = posts.id) as repost_count,
+      (SELECT COUNT(*) FROM posts replies WHERE replies.reply_to_id = posts.id) as reply_count,
+      EXISTS(SELECT 1 FROM likes WHERE likes.post_id = posts.id AND likes.user_id = ?) as is_liked,
+      EXISTS(SELECT 1 FROM reposts WHERE reposts.post_id = posts.id AND reposts.user_id = ?) as is_reposted,
+      1 as is_profile_repost,
+      reposter.username as reposter_username,
+      reposts.created_at as sort_time
+    FROM reposts
+    JOIN posts ON reposts.post_id = posts.id
+    JOIN users as author ON posts.user_id = author.id
+    JOIN users as reposter ON reposts.user_id = reposter.id
+    WHERE reposter.id = ? AND posts.expires_at > CURRENT_TIMESTAMP
+
+    ORDER BY sort_time DESC
+  `).all(currentUserId, currentUserId, user.id, currentUserId, currentUserId, user.id);
 
   const stats = db.prepare(`
     SELECT 

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import { apiClient, resolveAssetUrl } from "../lib/api";
+import ImageCropper from "../components/ImageCropper";
 
 function SettingsPage({ currentUser, onLogout, onProfileUpdate }) {
   const [displayName, setDisplayName] = useState(currentUser?.display_name || "");
@@ -7,17 +8,33 @@ function SettingsPage({ currentUser, onLogout, onProfileUpdate }) {
   const [message, setMessage] = useState("");
   const [uploading, setUploading] = useState(false);
   const [previewUrl, setPreviewUrl] = useState(currentUser?.profile_picture_url || "");
+  const [cropImageSrc, setCropImageSrc] = useState(null);
   const fileInputRef = useRef(null);
 
-  const handleFileChange = async (e) => {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
+    if (!file.type.startsWith('image/')) {
+      setMessage('Please upload an image file.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setCropImageSrc(event.target.result);
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  const handleCropComplete = async (croppedFile) => {
+    setCropImageSrc(null);
     setUploading(true);
     setMessage("");
 
     const formData = new FormData();
-    formData.append("image", file);
+    formData.append("image", croppedFile);
 
     try {
       const res = await apiClient("/api/upload", {
@@ -38,6 +55,17 @@ function SettingsPage({ currentUser, onLogout, onProfileUpdate }) {
       setUploading(false);
     }
   };
+
+  if (cropImageSrc) {
+    return (
+      <ImageCropper
+        imageSrc={cropImageSrc}
+        aspect={1}
+        onCropComplete={handleCropComplete}
+        onCancel={() => setCropImageSrc(null)}
+      />
+    );
+  }
 
   const handleUpdate = async (e) => {
     e.preventDefault();

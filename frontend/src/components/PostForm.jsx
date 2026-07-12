@@ -1,10 +1,12 @@
 import { useState, useRef } from "react";
 import { Image, Clock, X } from "lucide-react";
 import { apiClient, resolveAssetUrl } from "../lib/api";
+import ImageCropper from "./ImageCropper";
 
 function PostForm({ onSubmit, currentUser, replyToId = null, onReplySuccess, onCancel }) {
   const [content, setContent] = useState("");
   const [mediaFile, setMediaFile] = useState(null);
+  const [cropImageSrc, setCropImageSrc] = useState(null);
   const [duration, setDuration] = useState("24h");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
@@ -59,45 +61,27 @@ function PostForm({ onSubmit, currentUser, replyToId = null, onReplySuccess, onC
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const img = new window.Image();
-      img.onload = () => {
-        const MAX_WIDTH = 1200;
-        const MAX_HEIGHT = 1200;
-        let width = img.width;
-        let height = img.height;
-
-        if (width > height) {
-          if (width > MAX_WIDTH) {
-            height = Math.round((height * MAX_WIDTH) / width);
-            width = MAX_WIDTH;
-          }
-        } else {
-          if (height > MAX_HEIGHT) {
-            width = Math.round((width * MAX_HEIGHT) / height);
-            height = MAX_HEIGHT;
-          }
-        }
-
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-
-        const ctx = canvas.getContext('2d');
-        ctx.drawImage(img, 0, 0, width, height);
-
-        canvas.toBlob((blob) => {
-          const resizedFile = new File([blob], file.name, {
-            type: 'image/jpeg',
-            lastModified: Date.now()
-          });
-          setMediaFile(resizedFile);
-        }, 'image/jpeg', 0.85);
-      };
-      img.src = event.target.result;
+      setCropImageSrc(event.target.result);
     };
     reader.readAsDataURL(file);
     e.target.value = '';
   };
+
+  const handleCropComplete = (croppedFile) => {
+    setMediaFile(croppedFile);
+    setCropImageSrc(null);
+  };
+
+  if (cropImageSrc) {
+    return (
+      <ImageCropper
+        imageSrc={cropImageSrc}
+        aspect={4 / 3} // Aspect ratio for posts can be 4:3 or free. Let's use 4/3.
+        onCropComplete={handleCropComplete}
+        onCancel={() => setCropImageSrc(null)}
+      />
+    );
+  }
 
   return (
     <section className={isReply ? "replyPostForm" : "createPost"}>

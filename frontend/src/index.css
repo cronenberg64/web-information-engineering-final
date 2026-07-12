@@ -632,6 +632,7 @@ h1, h2, h3, h4, h5, h6 {
 
 .postMedia {
   margin-top: 12px;
+  margin-bottom: 16px;
   border-radius: 12px;
   overflow: hidden;
   border: 1px solid var(--border-color);
@@ -923,4 +924,76 @@ h1, h2, h3, h4, h5, h6 {
   min-width: 16px;
   text-align: center;
   border: 1px solid var(--bg);
+}
+
+/* Profile Tabs */
+.profileTabs {
+  display: flex;
+  border-bottom: 1px solid var(--border-color);
+  margin-bottom: 16px;
+}
+
+.tabButton {
+  flex: 1;
+  padding: 16px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text-muted);
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabButton:hover {
+  background-color: var(--hover-bg);
+}
+
+.tabButton.active {
+  color: var(--text-color);
+  border-bottom-color: var(--primary);
+}
+
+/* Image Cropper */
+.cropModal {
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  max-width: 600px;
+  height: 80vh;
+  max-height: 600px;
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  overflow: hidden;
+}
+
+.cropContainer {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  background: #000;
+}
+
+.cropControls {
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+  background: var(--bg-secondary);
+  gap: 16px;
+}
+
+.zoom-range {
+  width: 100%;
+}
+
+.cropActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
 }
