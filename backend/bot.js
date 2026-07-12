@@ -37,21 +37,47 @@ function getRandomInt(max) {
   return Math.floor(Math.random() * max);
 }
 
-function getRandomUser() {
+function getRandomBotUser() {
   const placeholders = BOT_USERS.map(() => '?').join(',');
   const userList = db.prepare(`SELECT id FROM users WHERE username IN (${placeholders})`).all(...BOT_USERS);
   if (userList.length === 0) return null;
   return userList[getRandomInt(userList.length)];
 }
 
-function getRandomPost() {
+function getTargetUser() {
+  const placeholders = BOT_USERS.map(() => '?').join(',');
+  if (Math.random() < 0.8) {
+    const userList = db.prepare(`SELECT id FROM users WHERE username NOT IN (${placeholders})`).all(...BOT_USERS);
+    if (userList.length > 0) {
+      return userList[getRandomInt(userList.length)];
+    }
+  }
+  const userList = db.prepare(`SELECT id FROM users`).all();
+  if (userList.length === 0) return null;
+  return userList[getRandomInt(userList.length)];
+}
+
+function getTargetPost() {
+  const placeholders = BOT_USERS.map(() => '?').join(',');
+  if (Math.random() < 0.8) {
+    const postList = db.prepare(`
+      SELECT p.id, p.user_id 
+      FROM posts p 
+      JOIN users u ON p.user_id = u.id 
+      WHERE u.username NOT IN (${placeholders}) 
+        AND p.expires_at > CURRENT_TIMESTAMP
+    `).all(...BOT_USERS);
+    if (postList.length > 0) {
+      return postList[getRandomInt(postList.length)];
+    }
+  }
   const postList = db.prepare("SELECT id, user_id FROM posts WHERE expires_at > CURRENT_TIMESTAMP").all();
   if (postList.length === 0) return null;
   return postList[getRandomInt(postList.length)];
 }
 
 function performRandomAction() {
-  const user = getRandomUser();
+  const user = getRandomBotUser();
   if (!user) return;
 
   const actionType = getRandomInt(12); // 0-2: Post, 3-5: Reply, 6-8: Like, 9-10: Repost, 11: Follow
@@ -77,7 +103,7 @@ function performRandomAction() {
 
   } else if (actionType >= 3 && actionType < 6) {
     // REPLY TO POST
-    const post = getRandomPost();
+    const post = getTargetPost();
     if (post) {
       const content = SENTENCES[getRandomInt(SENTENCES.length)];
       const hashtags = [...new Set((content.match(/#(\w+)/g) || []).map(tag => tag.slice(1).toLowerCase()))];
@@ -104,28 +130,28 @@ function performRandomAction() {
 
   } else if (actionType >= 6 && actionType < 9) {
     // LIKE POST
-    const post = getRandomPost();
-    if (post && post.user_id !== user.id) {
-      const info = db.prepare("INSERT OR IGNORE INTO likes (user_id, post_id) VALUES (?, ?)").run(user.id, post.id);
+    const targetPost = getTargetPost();
+    if (targetPost && targetPost.user_id !== user.id) {
+      const info = db.prepare("INSERT OR IGNORE INTO likes (user_id, post_id) VALUES (?, ?)").run(user.id, targetPost.id);
       if (info.changes > 0) {
-        db.prepare(`INSERT INTO notifications (user_id, type, source_user_id, post_id) VALUES (?, 'like', ?, ?)`).run(post.user_id, user.id, post.id);
-        console.log(`[BOT] User ${user.id} liked post ${post.id}`);
+        db.prepare(`INSERT INTO notifications (user_id, type, source_user_id, post_id) VALUES (?, 'like', ?, ?)`).run(targetPost.user_id, user.id, targetPost.id);
+        console.log(`[BOT] User ${user.id} liked post ${targetPost.id}`);
       }
     }
 
   } else if (actionType >= 9 && actionType < 11) {
     // REPOST
-    const post = getRandomPost();
-    if (post && post.user_id !== user.id) {
-      const info = db.prepare("INSERT OR IGNORE INTO reposts (user_id, post_id) VALUES (?, ?)").run(user.id, post.id);
+    const targetPost = getTargetPost();
+    if (targetPost && targetPost.user_id !== user.id) {
+      const info = db.prepare("INSERT OR IGNORE INTO reposts (user_id, post_id) VALUES (?, ?)").run(user.id, targetPost.id);
       if (info.changes > 0) {
-        db.prepare(`INSERT INTO notifications (user_id, type, source_user_id, post_id) VALUES (?, 'repost', ?, ?)`).run(post.user_id, user.id, post.id);
-        console.log(`[BOT] User ${user.id} reposted post ${post.id}`);
+        db.prepare(`INSERT INTO notifications (user_id, type, source_user_id, post_id) VALUES (?, 'repost', ?, ?)`).run(targetPost.user_id, user.id, targetPost.id);
+        console.log(`[BOT] User ${user.id} reposted post ${targetPost.id}`);
       }
     }
   } else {
     // FOLLOW
-    const targetUser = getRandomUser();
+    const targetUser = getTargetUser();
     if (targetUser && targetUser.id !== user.id) {
       const info = db.prepare("INSERT OR IGNORE INTO follows (follower_id, following_id) VALUES (?, ?)").run(user.id, targetUser.id);
       if (info.changes > 0) {
